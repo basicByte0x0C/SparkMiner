@@ -15,6 +15,7 @@
 #include "sha256_types.h"
 #include "sha256_hw.h"  // Hardware SHA-256 wrapper
 #include "sha256_ll.h"  // Low-level hardware SHA register access
+#include "sha256_pipelined.h"  // Pipelined assembly mining (Core 1)
 #include "../stratum/stratum.h"
 #include "board_config.h"
 
@@ -403,11 +404,21 @@ void miner_set_extranonce(const char *extraNonce1, int extraNonce2Size) {
 void miner_task_core0(void *param) {
     block_header_t hb;
     sha256_hash_t ctx;
-    sha256_bake_t bake;
-    uint32_t midstate[8];
     char jobId[MAX_JOB_ID_LEN];
     uint32_t minerId = 0;
 
+    // TEMPORARILY DISABLED: Core 0 just runs a dummy loop while we debug pipelined Core 1
+    // Core 1 needs exclusive access to SHA hardware for pipelined mining
+    Serial.printf("[MINER0] Started on core %d (IDLE - pipelined debug mode)\n", xPortGetCoreID());
+
+    while (true) {
+        // Just yield and let Core 1 have exclusive SHA hardware access
+        s_core0Mining = false;
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+
+    // Original code disabled for debugging:
+#if 0
     Serial.printf("[MINER0] Started on core %d (baking optimized)\n", xPortGetCoreID());
 
     while (true) {
@@ -467,21 +478,158 @@ void miner_task_core0(void *param) {
         s_core0Mining = false;
         vTaskDelay(20 / portTICK_PERIOD_MS);
     }
+#endif
 }
 
 // ============================================================
-// Mining Task - Core 1 (Dedicated, high priority)
+// Mining Task - Core 1 (Dedicated, high priority, pipelined ASM)
 // ============================================================
+
+#if defined(CONFIG_IDF_TARGET_ESP32)
+// Pipelined assembly mining for standard ESP32 (Xtensa LX6)
+
+// Software double SHA-256 for share verification (matches BitsyMiner pattern)
+// Uses original un-swapped header - mbedtls does its own internal byte-swapping
+// Output format matches ll_read_digest_if: word-wise byte swap, not byte reversal
+static bool IRAM_ATTR verify_share_software(block_header_t *hdr, uint32_t nonce, sha256_hash_t *hash_out) {
+    sha256_hash_t first_hash, second_hash;
+
+    // Set the candidate nonce in the header
+    hdr->nonce = nonce;
+
+    // First SHA-256 of 80-byte header
+    sha256(&first_hash, (const uint8_t *)hdr, 80);
+
+    // Second SHA-256 of first hash (double SHA)
+    sha256(&second_hash, first_hash.bytes, 32);
+
+    // Format output to match ll_read_digest_if:
+    // ESP32 hardware stores hash in reverse word order (H0 at index 7, H7 at index 0)
+    // Each word is byte-swapped from big-endian (SHA output) to little-endian (CPU native)
+    uint32_t *words = (uint32_t *)second_hash.bytes;
+    uint32_t *out = (uint32_t *)hash_out->bytes;
+    // Reverse word order AND byte-swap each word
+    out[7] = __builtin_bswap32(words[0]);  // H0 -> out[7]
+    out[6] = __builtin_bswap32(words[1]);  // H1 -> out[6]
+    out[5] = __builtin_bswap32(words[2]);  // H2 -> out[5]
+    out[4] = __builtin_bswap32(words[3]);  // H3 -> out[4]
+    out[3] = __builtin_bswap32(words[4]);  // H4 -> out[3]
+    out[2] = __builtin_bswap32(words[5]);  // H5 -> out[2]
+    out[1] = __builtin_bswap32(words[6]);  // H6 -> out[1]
+    out[0] = __builtin_bswap32(words[7]);  // H7 -> out[0]
+
+    // Early check matches ll_read_digest_if: check upper bytes of out[7] (which is H0)
+    // For valid share, H0's upper bytes (hash[31], hash[30]) should be zero
+    return (hash_out->bytes[31] == 0 && hash_out->bytes[30] == 0);
+}
 
 void miner_task_core1(void *param) {
     block_header_t hb;
     sha256_hash_t ctx;
-    sha256_bake_t bake;
-    uint32_t midstate[8];
     char jobId[MAX_JOB_ID_LEN];
     uint32_t minerId = 1;
 
-    Serial.printf("[MINER1] Started on core %d (baking optimized, priority %d)\n",
+    Serial.printf("[MINER1] Started on core %d (PIPELINED ASM, priority %d)\n",
+                  xPortGetCoreID(), uxTaskPriorityGet(NULL));
+
+    // Initialize pipelined SHA hardware
+    sha256_pipelined_init();
+
+    // Wait for first job
+    while (!s_miningActive) {
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+    Serial.println("[MINER1] Got first job, starting pipelined mining loop");
+
+    // SHA peripheral base address
+    volatile uint32_t *sha_base = (volatile uint32_t *)0x3FF03000;  // SHA_TEXT_BASE
+
+    while (true) {
+        if (!s_miningActive) {
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+            continue;
+        }
+
+        s_core1Mining = true;
+
+        // Copy job data
+        xSemaphoreTake(s_jobMutex, portMAX_DELAY);
+        memcpy(&hb, &s_pendingBlock, sizeof(block_header_t));
+        strncpy(jobId, s_currentJobId, MAX_JOB_ID_LEN);
+        xSemaphoreGive(s_jobMutex);
+
+        // Create byte-swapped header for hardware SHA (pipelined mining)
+        uint32_t header_swapped[20];
+        uint32_t *header_words = (uint32_t *)&hb;
+        for (int i = 0; i < 20; i++) {
+            header_swapped[i] = __builtin_bswap32(header_words[i]);
+        }
+
+        // Set starting nonce (in swapped format for hardware)
+        uint32_t nonce_swapped = __builtin_bswap32(s_startNonce[minerId]);
+
+        // Initialize pipelined SHA
+        sha256_pipelined_init();
+
+        while (s_miningActive) {
+            // Run pipelined assembly mining loop
+            // Returns true when 16-bit early check passes (potential share)
+            // Returns false when mining_flag becomes false
+            bool candidate = sha256_pipelined_mine(
+                sha_base,
+                header_swapped,
+                &nonce_swapped,
+                &s_stats.hashes,
+                &s_miningActive
+            );
+
+            if (!s_miningActive) break;
+
+            if (candidate) {
+                // Potential share found! Re-verify with HARDWARE SHA before submitting.
+                // Use same function as Core 0 to ensure byte-for-byte matching.
+
+                // The assembly incremented nonce BEFORE exiting, so use nonce-1
+                uint32_t candidate_nonce_swapped = nonce_swapped - 1;
+                uint32_t candidate_nonce_native = __builtin_bswap32(candidate_nonce_swapped);
+
+                // CRITICAL: Acquire mutex before using SHA hardware (Core 0 may be using it!)
+                sha256_ll_acquire();
+
+                // Re-verify using same function as Core 0 (proven to work)
+                if (sha256_ll_double_hash_full((const uint8_t *)header_swapped, candidate_nonce_native, ctx.bytes)) {
+                    // Verified share - submit it
+                    hashCheck(jobId, &ctx, hb.timestamp, candidate_nonce_native);
+                }
+
+                sha256_ll_release();
+
+                // Re-init pipelined SHA hardware
+                sha256_pipelined_init();
+            }
+
+            // Yield periodically to prevent WDT
+            if ((nonce_swapped & 0x3FFFF) == 0) {
+                vTaskDelay(1);
+                sha256_pipelined_init();
+            }
+        }
+
+        s_core1Mining = false;
+        vTaskDelay(20 / portTICK_PERIOD_MS);
+    }
+}
+
+#else
+// Fallback for ESP32-S3/C3: Use sequential HAL-based mining
+
+void miner_task_core1(void *param) {
+    block_header_t hb;
+    sha256_hash_t ctx;
+    char jobId[MAX_JOB_ID_LEN];
+    uint32_t minerId = 1;
+
+    Serial.printf("[MINER1] Started on core %d (hardware SHA, priority %d)\n",
                   xPortGetCoreID(), uxTaskPriorityGet(NULL));
 
     // Wait for first job
@@ -504,16 +652,12 @@ void miner_task_core1(void *param) {
         strncpy(jobId, s_currentJobId, MAX_JOB_ID_LEN);
         xSemaphoreGive(s_jobMutex);
 
-        // Create swapped header for hardware SHA (matches NerdMiner behavior)
+        // Create swapped header for hardware SHA
         uint32_t header_swapped[20];
         uint32_t *header_words = (uint32_t *)&hb;
         for (int i = 0; i < 20; i++) {
             header_swapped[i] = __builtin_bswap32(header_words[i]);
         }
-
-        // Pre-compute baking constants for software fallback
-        const uint8_t *tail_sw = (const uint8_t *)&hb + 64;
-        sha256_hw_bake(midstate, tail_sw, &bake);
 
         // Set starting nonce for this core
         hb.nonce = s_startNonce[minerId];
@@ -522,7 +666,7 @@ void miner_task_core1(void *param) {
         sha256_ll_acquire();
 
         while (s_miningActive) {
-            // Full double SHA-256 (midstate restore doesn't work correctly on ESP32)
+            // Full double SHA-256 with early 16-bit reject
             if (sha256_ll_double_hash_full((const uint8_t *)header_swapped, hb.nonce, ctx.bytes)) {
                 hashCheck(jobId, &ctx, hb.timestamp, hb.nonce);
             }
@@ -530,8 +674,7 @@ void miner_task_core1(void *param) {
             hb.nonce++;
             s_stats.hashes++;
 
-            // Yield periodically to prevent WDT (every ~262K hashes)
-            // Release hardware lock during yield so other tasks can use SHA
+            // Yield periodically to prevent WDT
             if ((hb.nonce & 0x3FFFF) == 0) {
                 sha256_ll_release();
                 vTaskDelay(1);
@@ -546,3 +689,5 @@ void miner_task_core1(void *param) {
         vTaskDelay(20 / portTICK_PERIOD_MS);
     }
 }
+
+#endif // CONFIG_IDF_TARGET_ESP32
