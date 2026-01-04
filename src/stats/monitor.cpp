@@ -40,16 +40,32 @@ static void updateDisplayData(display_data_t *data) {
     data->blocksFound = mstats->blocks;
     data->uptimeSeconds = (millis() - s_startTime) / 1000;
 
-    // Calculate hashrate (hashes per second over last interval)
+    // Calculate hashrate with EMA smoothing
     static uint64_t lastHashes = 0;
     static uint32_t lastHashTime = 0;
+    static double smoothedHashRate = 0.0;
+    static bool firstSample = true;
 
     uint32_t now = millis();
     uint32_t elapsed = now - lastHashTime;
 
     if (elapsed >= 1000) {
         uint64_t deltaHashes = mstats->hashes - lastHashes;
-        data->hashRate = (double)deltaHashes * 1000.0 / elapsed;
+        double instantRate = (double)deltaHashes * 1000.0 / elapsed;
+
+        // Exponential moving average (alpha=0.15 for smooth but responsive updates)
+        // Lower alpha = smoother but slower to respond
+        // Higher alpha = more responsive but jumpier
+        const double alpha = 0.15;
+
+        if (firstSample) {
+            smoothedHashRate = instantRate;
+            firstSample = false;
+        } else {
+            smoothedHashRate = alpha * instantRate + (1.0 - alpha) * smoothedHashRate;
+        }
+
+        data->hashRate = smoothedHashRate;
         lastHashes = mstats->hashes;
         lastHashTime = now;
     }

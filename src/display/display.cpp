@@ -136,34 +136,27 @@ static String formatDifficulty(double diff) {
 // Spark Logo Drawing
 // ============================================================
 
-// 16x24 lightning bolt bitmap (1 = pixel on)
+// 16x16 lightning bolt bitmap (1 = pixel on)
+// Clean simple design with 2 jogs
 static const uint16_t BOLT_W = 16;
-static const uint16_t BOLT_H = 24;
+static const uint16_t BOLT_H = 16;
 static const uint8_t boltBitmap[] = {
-    0b00000111, 0b11100000,  // row 0:      ######
-    0b00001111, 0b11100000,  // row 1:     #######
-    0b00011111, 0b11000000,  // row 2:    #######
-    0b00111111, 0b10000000,  // row 3:   #######
-    0b01111111, 0b00000000,  // row 4:  #######
-    0b11111110, 0b00000000,  // row 5: #######
-    0b11111100, 0b00000000,  // row 6: ######
-    0b11111111, 0b11110000,  // row 7: ############ <- STEP juts right
-    0b01111111, 0b11110000,  // row 8:  ###########
-    0b00111111, 0b11100000,  // row 9:   #########
-    0b00011111, 0b11000000,  // row 10:    #######
-    0b00001111, 0b10000000,  // row 11:     ######
-    0b00011111, 0b00000000,  // row 12:    #####
-    0b00111110, 0b00000000,  // row 13:   #####
-    0b01111100, 0b00000000,  // row 14:  #####
-    0b11111000, 0b00000000,  // row 15: #####
-    0b11110000, 0b00000000,  // row 16: ####
-    0b01110000, 0b00000000,  // row 17:  ###
-    0b00110000, 0b00000000,  // row 18:   ##
-    0b00010000, 0b00000000,  // row 19:    #
-    0b00000000, 0b00000000,  // row 20:
-    0b00000000, 0b00000000,  // row 21:
-    0b00000000, 0b00000000,  // row 22:
-    0b00000000, 0b00000000,  // row 23:
+    0b00000000, 0b00110000,  // row 0:           ##
+    0b00000000, 0b01100000,  // row 1:          ##
+    0b00000000, 0b11000000,  // row 2:         ##
+    0b00000001, 0b10000000,  // row 3:        ##
+    0b00000011, 0b11110000,  // row 4:       ######  <- first jog
+    0b00000000, 0b11110000,  // row 5:         ####
+    0b00000001, 0b10000000,  // row 6:        ##
+    0b00000011, 0b00000000,  // row 7:       ##
+    0b00000111, 0b11000000,  // row 8:      #####   <- second jog
+    0b00000001, 0b11000000,  // row 9:        ###
+    0b00000011, 0b00000000,  // row 10:       ##
+    0b00000110, 0b00000000,  // row 11:      ##
+    0b00001000, 0b00000000,  // row 12:     #       <- point
+    0b00000000, 0b00000000,  // row 13:
+    0b00000000, 0b00000000,  // row 14:
+    0b00000000, 0b00000000,  // row 15:
 };
 
 static void drawSparkLogo(int x, int y, int size, bool toSprite = false) {
@@ -171,6 +164,7 @@ static void drawSparkLogo(int x, int y, int size, bool toSprite = false) {
     float scale = (float)size / BOLT_H;
 
     for (int row = 0; row < BOLT_H; row++) {
+        // 16-bit wide bitmap: 2 bytes per row
         uint8_t b1 = boltBitmap[row * 2];
         uint8_t b2 = boltBitmap[row * 2 + 1];
         uint16_t rowBits = (b1 << 8) | b2;
@@ -185,6 +179,18 @@ static void drawSparkLogo(int x, int y, int size, bool toSprite = false) {
             }
         }
     }
+}
+
+// ============================================================
+// Version Helpers
+// ============================================================
+
+// Extract major version number from AUTO_VERSION (e.g., "1.2.0" -> 1)
+static int getMajorVersion() {
+    const char* ver = AUTO_VERSION;
+    // Skip 'v' prefix if present
+    if (ver[0] == 'v' || ver[0] == 'V') ver++;
+    return atoi(ver);
 }
 
 // ============================================================
@@ -206,6 +212,13 @@ static void drawHeader(const display_data_t *data) {
     s_tft.print("Spark");
     s_tft.setTextColor(COLOR_SPARK1);
     s_tft.print("Miner");
+
+    // Major version badge
+    s_tft.setTextSize(1);
+    s_tft.setTextColor(COLOR_DIM);
+    s_tft.setCursor(162, 16);
+    s_tft.print("V");
+    s_tft.print(getMajorVersion());
 
     // Status indicators (right side) with labels
     s_tft.setTextSize(1);
@@ -541,16 +554,23 @@ void display_init(uint8_t rotation, uint8_t brightness) {
     // Title with spark gradient
     s_tft.setTextSize(3);
     s_tft.setTextColor(COLOR_ACCENT);
-    s_tft.setCursor(55, 135);
+    s_tft.setCursor(55, 130);
     s_tft.print("Spark");
     s_tft.setTextColor(COLOR_SPARK1);
     s_tft.print("Miner");
 
-    // Version
-    s_tft.setTextColor(COLOR_FG);
+    // Major version badge (large)
+    s_tft.setTextSize(2);
+    s_tft.setTextColor(COLOR_SPARK2);
+    s_tft.setCursor(115, 158);
+    s_tft.print("V");
+    s_tft.print(getMajorVersion());
+
+    // Full version
+    s_tft.setTextColor(COLOR_DIM);
     s_tft.setTextSize(1);
-    s_tft.setCursor(135, 170);
-    s_tft.print("v" AUTO_VERSION);
+    s_tft.setCursor(155, 162);
+    s_tft.print("(" AUTO_VERSION ")");
 
     // Tagline
     s_tft.setTextColor(COLOR_DIM);
