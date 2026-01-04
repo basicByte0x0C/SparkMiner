@@ -2,6 +2,8 @@
 
 SparkMiner is a high-performance dual-core Bitcoin mining firmware for the ESP32-2432S028 (Cheap Yellow Display) board. It combines the best features of BitsyMiner and NerdMiner to deliver maximum hashrate using hardware acceleration.
 
+<img src="images/3CYD-V1-UI.jpg" alt="SparkMiner Display" width="575">
+
 ## Features
 
 - **Dual-Core Mining:** Utilizes both ESP32 cores for maximum throughput.
