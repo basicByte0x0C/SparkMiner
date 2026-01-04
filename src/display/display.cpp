@@ -280,7 +280,7 @@ static void drawMiningScreen(const display_data_t *data) {
         {"Best",     formatDifficulty(data->bestDifficulty), COLOR_SPARK1},
         {"Hashes",   formatNumber(data->totalHashes), COLOR_FG},
         {"Uptime",   formatUptime(data->uptimeSeconds), COLOR_FG},
-        {"Ping",     String(data->avgLatency) + "ms", COLOR_FG},
+        {"Jobs",     String(data->templates), COLOR_FG},
         {"32-bit",   String(data->blocks32), COLOR_SPARK2},
         {"Blocks",   String(data->blocksFound), COLOR_SUCCESS},
     };
