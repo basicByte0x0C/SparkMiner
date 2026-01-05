@@ -57,10 +57,16 @@ The easiest way to install and manage SparkMiner on CYD boards (1-USB or 2-USB v
 git clone https://github.com/SneezeGUI/SparkMiner.git
 cd SparkMiner
 
-# Install PlatformIO CLI (if not installed)
+# Create virtual environment and install dependencies
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+# source .venv/bin/activate  # Linux/Mac
 pip install platformio
 
-# Build and flash (auto-detects USB port)
+# Use the interactive flash tool (recommended)
+python flash.py
+
+# Or build a specific board directly
 pio run -e esp32-2432s028-2usb -t upload
 
 # Monitor serial output
@@ -84,10 +90,12 @@ Understanding the difference between the firmware files:
 
 | Board | Env | Firmware | Notes |
 |-------|-----|----------|-------|
-| ESP32-2432S028R | `esp32-2432s028` | `esp32-2432s028_*.bin` | Standard CYD |
-| ESP32-2432S028R 2-USB | `esp32-2432s028-2usb` | `esp32-2432s028-2usb_*.bin` | Better power stability |
-| ESP32-2432S028R ST7789 | `esp32-2432s028-st7789` | `esp32-2432s028-st7789_*.bin` | Alt driver (rare) |
-| ESP32-S3 CYD | `esp32-s3-2432s028` | `esp32-s3-2432s028_*.bin` | S3 variant, higher perf |
+| ESP32-2432S028R | `esp32-2432s028` | `esp32-2432s028_*.bin` | Standard CYD (1-USB) |
+| ESP32-2432S028R 2-USB | `esp32-2432s028-2usb` | `esp32-2432s028-2usb_*.bin` | CYD with dual USB ports |
+| ESP32-2432S028R ST7789 | `esp32-2432s028-st7789` | `esp32-2432s028-st7789_*.bin` | Alt display driver (rare) |
+| Freenove ESP32-S3 | `esp32-s3-2432s028` | `esp32-s3-2432s028_*.bin` | FNK0104 with 2.8" display, SD_MMC |
+| ESP32-S3 DevKit | `esp32-s3-devkit` | `esp32-s3-devkit_*.bin` | Headless with PSRAM |
+| ESP32 Headless | `esp32-headless` | `esp32-headless_*.bin` | No display, serial only |
 
 ### Where to Buy
 
@@ -317,10 +325,45 @@ screen /dev/ttyUSB0 115200
 ### Prerequisites
 
 - [PlatformIO](https://platformio.org/) (CLI or VS Code extension)
-- Python 3.7+
+- Python 3.8+
 - Git
 
-### Build Commands
+### Interactive Flash Tool (Recommended)
+
+SparkMiner includes a unified flash tool that supports all boards with an interactive menu:
+
+```bash
+# Interactive mode - select board, build, flash, monitor
+python flash.py
+
+# Or use the batch file on Windows
+flash.bat
+
+# List all supported boards
+python flash.py --list
+
+# Select a specific board
+python flash.py --board cyd-2usb
+python flash.py --board freenove-s3
+python flash.py --board esp32-headless
+
+# Build, flash, and monitor in one command
+python flash.py --board cyd-2usb --all
+
+# Build only
+python flash.py --board freenove-s3 --build
+
+# Flash to specific port
+python flash.py --board cyd-2usb --flash COM5
+```
+
+**ESP32-S3 Note:** The Freenove ESP32-S3 requires manual bootloader mode entry:
+1. Hold **BOOT** button
+2. Press and release **RESET** button
+3. Release **BOOT** button
+4. The display will be blank - this is normal in download mode
+
+### Manual PlatformIO Commands
 
 ```bash
 # List available environments
@@ -337,6 +380,22 @@ pio run -e esp32-2432s028-2usb -t clean
 
 # Monitor serial output
 pio device monitor
+```
+
+### Manual Flashing with esptool
+
+If you need to flash manually without PlatformIO:
+
+```bash
+# ESP32 (CYD boards) - factory bin at 0x0
+esptool.py --chip esp32 --port COM3 --baud 921600 \
+    write_flash -z --flash-mode dio --flash-freq 40m \
+    0x0 esp32-2432s028-2usb_factory.bin
+
+# ESP32-S3 (Freenove) - factory bin at 0x0
+esptool.py --chip esp32s3 --port COM5 --baud 921600 \
+    write_flash -z --flash-mode dio --flash-freq 80m \
+    0x0 esp32-s3-2432s028_factory.bin
 ```
 
 ### Project Structure
@@ -356,6 +415,8 @@ SparkMiner/
 │   └── stratum/              # Stratum v1 protocol
 ├── include/
 │   └── board_config.h        # Hardware definitions
+├── flash.py                  # Universal build & flash tool
+├── flash.bat                 # Windows launcher for flash.py
 ├── platformio.ini            # Build configuration
 └── README.md
 ```

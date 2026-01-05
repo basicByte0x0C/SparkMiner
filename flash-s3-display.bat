@@ -1,29 +1,26 @@
 @echo off
 REM ============================================================
-REM SparkMiner - Freenove ESP32-S3 Display Flash Tool
+REM SparkMiner - Freenove ESP32-S3 Display Flash Tool (Legacy Wrapper)
 REM
-REM Interactive build and flash tool for the Freenove FNK0104
-REM ESP32-S3 with 2.8" ILI9341 display.
-REM
-REM Usage:
-REM   flash-s3-display.bat           - Interactive mode
-REM   flash-s3-display.bat --build   - Build only
-REM   flash-s3-display.bat --flash   - Flash only
-REM   flash-s3-display.bat --all     - Build + Flash + Monitor
+REM This script now redirects to the unified flash.bat tool.
+REM For full options, use: flash.bat --help
 REM ============================================================
 
 cd /d "%~dp0"
 
-REM Check for venv Python
-if exist ".venv\Scripts\python.exe" (
-    .venv\Scripts\python.exe flash-s3-display.py %*
-) else (
-    REM Fall back to system Python
-    python flash-s3-display.py %*
-)
+echo.
+echo [INFO] Redirecting to unified flash tool with Freenove ESP32-S3 board...
+echo.
 
-if %ERRORLEVEL% neq 0 (
-    echo.
-    echo Press any key to exit...
-    pause >nul
+if "%~1"=="--build" (
+    call flash.bat --board freenove-s3 --build
+) else if "%~1"=="--flash" (
+    call flash.bat --board freenove-s3 --flash %2
+) else if "%~1"=="--monitor" (
+    call flash.bat --board freenove-s3 --monitor %2
+) else if "%~1"=="--all" (
+    call flash.bat --board freenove-s3 --all %2
+) else (
+    REM Interactive mode
+    call flash.bat --board freenove-s3
 )

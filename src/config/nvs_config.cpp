@@ -213,19 +213,32 @@ void nvs_config_init() {
     // Initialize with defaults first
     nvs_config_reset(&s_config);
 
-    // Try to load from NVS
-    if (!nvs_config_load(&s_config)) {
-        Serial.println("[NVS] No valid config in NVS, checking for config file...");
+    bool loadedFromSd = false;
+    bool loadedFromNvs = false;
 
-        // Try to load from config.json file
-        if (loadConfigFromFile(&s_config)) {
-            Serial.println("[NVS] Saving config from file to NVS...");
-            nvs_config_save(&s_config);
-        } else {
-            Serial.println("[NVS] No config file found, using defaults");
-        }
-    } else {
+    // 1. Try to load from NVS first (persistent storage takes priority)
+    // Config saved from SD card or WiFi portal persists here
+    if (nvs_config_load(&s_config)) {
         Serial.println("[NVS] Configuration loaded from NVS");
+        loadedFromNvs = true;
+    }
+
+    // 2. If no valid NVS config, try SD card (initial setup only)
+    // SD card is only used when NVS is empty (first boot or factory reset)
+    if (!loadedFromNvs) {
+        Serial.println("[NVS] No valid config in NVS, checking for config file...");
+        if (loadConfigFromFile(&s_config)) {
+            Serial.println("[NVS] Config loaded from SD card (initial setup)");
+            loadedFromSd = true;
+            // Save to NVS for persistence
+            Serial.println("[NVS] Saving config to NVS for persistence...");
+            nvs_config_save(&s_config);
+        }
+    }
+
+    // 3. If neither, we are using defaults (will use WiFi portal)
+    if (!loadedFromNvs && !loadedFromSd) {
+        Serial.println("[NVS] No config file found, using defaults");
     }
 
     s_initialized = true;
