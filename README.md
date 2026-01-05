@@ -2,7 +2,7 @@
 
 **High-performance dual-core Bitcoin solo miner for ESP32**
 
-<img src="images/3CYD-V1-UI.jpg" alt="SparkMiner Display" width="575">
+<img src="images/1767589853452.jpg" alt="SparkMiner Display" width="575">
 
 SparkMiner is optimized firmware for the ESP32-2432S028 "Cheap Yellow Display" (CYD) board, delivering ~700 KH/s using hardware-accelerated SHA-256 and a pipelined assembly mining loop.
 
