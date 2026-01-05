@@ -513,4 +513,8 @@ Examples:
     interactive_menu()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print(f"\n\n{color('Cancelled. Goodbye!', Colors.CYAN)}\n")
+        sys.exit(0)
