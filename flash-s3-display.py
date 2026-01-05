@@ -357,53 +357,78 @@ def check_port_exists(port):
     ports = list_serial_ports()
     return any(p[0] == port for p in ports)
 
+def is_usb_serial_port(port, desc):
+    """Check if a port is likely a USB serial port (not Bluetooth)"""
+    desc_upper = desc.upper()
+    # Exclude Bluetooth ports
+    if "BLUETOOTH" in desc_upper:
+        return False
+    # Include USB serial ports
+    if any(x in desc_upper for x in ["USB", "CP210", "CH340", "JTAG", "ESP", "FTDI"]):
+        return True
+    # If description contains "Serial" but not "Bluetooth", might be USB
+    if "SERIAL" in desc_upper and "BLUETOOTH" not in desc_upper:
+        return True
+    return False
+
+def filter_usb_ports(ports):
+    """Filter port list to only USB serial ports (exclude Bluetooth)"""
+    return [(p, d) for p, d in ports if is_usb_serial_port(p, d)]
+
 def find_new_port(old_port):
     """Handle COM port change after reset - ESP32-S3 often changes ports"""
     print(f"\n{color('[INFO]', Colors.BLUE)} Checking if port {old_port} is still available...")
-    time.sleep(2)  # Give the device time to enumerate
+    print(f"{color('[INFO]', Colors.BLUE)} Waiting for device to enumerate...")
+    time.sleep(3)  # Give the device time to enumerate (increased from 2s)
 
     ports = list_serial_ports()
-    port_names = [p[0] for p in ports]
+    usb_ports = filter_usb_ports(ports)
+    usb_port_names = [p[0] for p in usb_ports]
 
-    if old_port in port_names:
+    if old_port in usb_port_names:
         print(f"{color('[OK]', Colors.GREEN)} Port {old_port} is available")
         return old_port
 
     print(f"{color('[WARNING]', Colors.YELLOW)} Port {old_port} is no longer available!")
-    print(f"\n{color('[INFO]', Colors.CYAN)} ESP32-S3 often changes COM ports after reset.")
+    print(f"{color('[INFO]', Colors.CYAN)} ESP32-S3 often changes COM ports after reset.")
 
-    if not ports:
-        print(f"{color('[TIP]', Colors.YELLOW)} No ports detected. The device may still be resetting.")
+    if not usb_ports:
+        print(f"{color('[TIP]', Colors.YELLOW)} No USB serial ports detected. Device may still be resetting.")
         wait_for_user("Press RESET on the board, wait 3 seconds, then press ENTER...")
-        time.sleep(1)
+        time.sleep(2)
         ports = list_serial_ports()
+        usb_ports = filter_usb_ports(ports)
 
-    if not ports:
-        print(f"{color('[ERROR]', Colors.RED)} No serial ports found!")
+    if not usb_ports:
+        print(f"{color('[ERROR]', Colors.RED)} No USB serial ports found!")
+        if ports:
+            print(f"{color('[INFO]', Colors.BLUE)} Other ports available (Bluetooth, etc):")
+            for p, d in ports:
+                print(f"    {p} - {d}")
         return None
 
-    if len(ports) == 1:
-        new_port = ports[0][0]
+    if len(usb_ports) == 1:
+        new_port = usb_ports[0][0]
         print(f"{color('[INFO]', Colors.GREEN)} Found device on {new_port}")
         return new_port
 
-    # Multiple ports - let user choose
-    print(f"\n{color('Available Ports:', Colors.GREEN)}")
+    # Multiple USB ports - let user choose
+    print(f"\n{color('Available USB Serial Ports:', Colors.GREEN)}")
     print("-" * 60)
-    for i, (p, desc) in enumerate(ports, 1):
+    for i, (p, desc) in enumerate(usb_ports, 1):
         print(f"  {color(f'[{i}]', Colors.CYAN)} {color(p, Colors.GREEN)} - {desc}")
     print("-" * 60)
 
     while True:
-        choice = input(f"\n{color('[?]', Colors.CYAN)} Select the new port (1-{len(ports)}): ").strip()
+        choice = input(f"\n{color('[?]', Colors.CYAN)} Select the new port (1-{len(usb_ports)}): ").strip()
         if choice.isdigit():
             idx = int(choice) - 1
-            if 0 <= idx < len(ports):
-                return ports[idx][0]
+            if 0 <= idx < len(usb_ports):
+                return usb_ports[idx][0]
         print(f"{color('[ERROR]', Colors.RED)} Invalid selection!")
 
 def open_monitor(port, after_flash=False):
-    """Open serial monitor"""
+    """Open serial monitor with retry on port change"""
     if not port:
         print(f"{color('[ERROR]', Colors.RED)} No port specified!")
         return
@@ -422,15 +447,36 @@ def open_monitor(port, after_flash=False):
             print(f"{color('[ERROR]', Colors.RED)} Could not find device. Try running monitor separately.")
             return
 
-    print(f"\n{color('=' * 60, Colors.CYAN)}")
-    print(f"{color(' Serial Monitor', Colors.BOLD)}")
-    print(f"{color('=' * 60, Colors.CYAN)}")
-    print(f"  Port: {port}")
-    print(f"  Baud: {MONITOR_BAUD}")
-    print(f"  Exit: Ctrl+C")
-    print(f"{color('=' * 60, Colors.CYAN)}\n")
+    # Try to open monitor with retry on failure
+    max_retries = 2
+    for attempt in range(max_retries + 1):
+        print(f"\n{color('=' * 60, Colors.CYAN)}")
+        print(f"{color(' Serial Monitor', Colors.BOLD)}")
+        print(f"{color('=' * 60, Colors.CYAN)}")
+        print(f"  Port: {port}")
+        print(f"  Baud: {MONITOR_BAUD}")
+        print(f"  Exit: Ctrl+C")
+        print(f"{color('=' * 60, Colors.CYAN)}\n")
 
-    run_command(get_pio_cmd() + ["device", "monitor", "-b", str(MONITOR_BAUD), "-p", port])
+        result = run_command(get_pio_cmd() + ["device", "monitor", "-b", str(MONITOR_BAUD), "-p", port])
+
+        # Check if monitor failed (likely port issue)
+        if result and result.returncode != 0 and attempt < max_retries:
+            print(f"\n{color('[WARNING]', Colors.YELLOW)} Monitor failed - port may have changed.")
+            print(f"{color('[INFO]', Colors.BLUE)} Rescanning for available ports...")
+
+            # Try to find a new port
+            new_port = find_new_port(port)
+            if new_port and new_port != port:
+                port = new_port
+                print(f"{color('[INFO]', Colors.GREEN)} Retrying with port {port}...")
+                continue
+            elif not new_port:
+                print(f"{color('[ERROR]', Colors.RED)} No device found. Please reconnect and try again.")
+                return
+
+        # Monitor exited normally or we've exhausted retries
+        break
 
 def interactive_menu():
     """Show interactive menu"""
