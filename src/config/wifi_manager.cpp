@@ -318,9 +318,11 @@ void wifi_manager_blocking() {
     snprintf(apSSID, sizeof(apSSID), "%s%02X%02X", AP_SSID_PREFIX, mac[4], mac[5]);
 
     // If no config at all, disable timeout - stay in portal until configured
+    // SD card stats backup does NOT count as configuration!
     bool hasAnyConfig = (config->ssid[0] != '\0') || (config->wallet[0] != '\0');
     if (!hasAnyConfig) {
-        Serial.println("[WIFI] No configuration found - portal will stay open");
+        Serial.println("[WIFI] No valid configuration found - portal will stay open indefinitely");
+        Serial.println("[WIFI] (SD card stats backup does not bypass WiFi setup)");
         s_wm.setConfigPortalTimeout(0);  // No timeout
     }
 
@@ -367,6 +369,18 @@ void wifi_manager_start() {
     }
 
     miner_config_t *config = nvs_config_get();
+
+    // Check if we have valid configuration (SD card with stats doesn't count as config)
+    bool hasWifiConfig = (config->ssid[0] != '\0');
+    bool hasPoolConfig = (config->wallet[0] != '\0');
+
+    if (!hasWifiConfig && !hasPoolConfig) {
+        // No config at all - go directly to captive portal
+        Serial.println("[WIFI] No configuration found (SD stats don't count as config)");
+        Serial.println("[WIFI] Entering WiFi configuration mode...");
+        wifi_manager_blocking();
+        return;
+    }
 
     // If we have stored credentials, try to connect directly
     if (config->ssid[0] != '\0') {

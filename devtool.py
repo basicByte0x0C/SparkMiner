@@ -521,22 +521,34 @@ class DevTool:
 
     def get_firmware_path(self, board: BoardConfig) -> Optional[Path]:
         """Find firmware file for a board"""
-        # Check release firmware first
+        # Check release firmware first (try friendly key name, then env name)
         version = self.get_version()
         fw_dir = self.get_firmware_dir() / version
+
+        # Try friendly name first (e.g., cyd-1usb_factory.bin)
+        factory = fw_dir / f"{board.key}_factory.bin"
+        if factory.exists():
+            return factory
+
+        # Fallback to env name for backwards compatibility (e.g., esp32-2432s028_factory.bin)
         factory = fw_dir / f"{board.env}_factory.bin"
         if factory.exists():
             return factory
 
-        # Check latest release
+        # Check latest release (try both naming schemes)
         if self.get_firmware_dir().exists():
             for version_dir in sorted(self.get_firmware_dir().iterdir(), reverse=True):
                 if version_dir.is_dir():
+                    # Try friendly name first
+                    factory = version_dir / f"{board.key}_factory.bin"
+                    if factory.exists():
+                        return factory
+                    # Fallback to env name
                     factory = version_dir / f"{board.env}_factory.bin"
                     if factory.exists():
                         return factory
 
-        # Check build directory
+        # Check build directory (raw PIO output, no friendly names)
         build_fw = self.script_dir / ".pio" / "build" / board.env / "firmware.bin"
         if build_fw.exists():
             return build_fw
