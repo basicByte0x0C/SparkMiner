@@ -24,7 +24,7 @@ The easiest way to install and manage SparkMiner on CYD boards (1-USB or 2-USB v
 
 **Step 2: Prepare SD Card**
 1. Format a microSD card as **FAT32**
-2. Download `esp32-2432s028-2usb_firmware.bin` (or your board variant) from [Releases](https://github.com/SneezeGUI/SparkMiner/releases)
+2. Download `cyd-2usb_firmware.bin` (or your board variant) from [Releases](https://github.com/SneezeGUI/SparkMiner/releases)
 3. Copy the `.bin` file to the SD card root
 4. Create a `config.json` file (see Configuration section)
 5. Insert SD card into CYD
@@ -45,7 +45,7 @@ The easiest way to install and manage SparkMiner on CYD boards (1-USB or 2-USB v
 1. Download the latest `*_factory.bin` firmware from [Releases](https://github.com/SneezeGUI/SparkMiner/releases)
 2. Flash using [ESP Web Flasher](https://esp.huhn.me/) or esptool:
    ```bash
-   esptool.py --chip esp32 --port COM3 write_flash 0x0 esp32-2432s028-2usb_factory.bin
+   esptool.py --chip esp32 --port COM3 write_flash 0x0 cyd-2usb_factory.bin
    ```
 3. Power on the board - it will create a WiFi access point
 4. Connect to `SparkMiner-XXXX` WiFi and configure via the web portal
@@ -84,6 +84,17 @@ Understanding the difference between the firmware files:
 
 - **`*_firmware.bin`**: The application only. Use this for **Launcher/SD card updates** or OTA updates. It does not include the bootloader.
 - **`*_factory.bin`**: The complete image (Bootloader + Partition Table + App). Use this for **direct USB flashing** (Option 2) to a blank board or to restore a board.
+
+---
+
+## Upgrading
+
+To upgrade from an older version:
+
+1. **Via SD Card (Launcher):** Replace the `*_firmware.bin` file on your SD card with the new version (e.g., `cyd-2usb_firmware.bin`).
+2. **Via USB:** Flash the new `*_factory.bin` using the interactive `devtool.py` or esptool.
+
+> **Note:** NVS stats are persistent across standard reboots, but a full flash *might* clear NVS depending on your method. The SD card backup (`/stats.json`) ensures your lifetime totals can be restored.
 
 ---
 
@@ -178,6 +189,18 @@ Configuration is automatically saved to flash memory after first successful setu
 
 ---
 
+## Persistent Mining Stats
+
+SparkMiner automatically saves mining statistics to ensure your lifetime totals are preserved across reboots and power cycles.
+
+- **NVS Persistence:** Stats are saved to the device's non-volatile storage.
+  - **Triggers:** First share found, 5 minutes after boot, and hourly thereafter.
+  - **Data:** Lifetime hashes, shares (accepted/rejected), best difficulty, and blocks found.
+- **SD Card Backup:** If an SD card is present, stats are also backed up to `/stats.json` for disaster recovery. This survives firmware updates and factory resets.
+- **Reset:** A factory reset (long-press BOOT) will clear NVS stats. Delete `/stats.json` from the SD card to fully reset.
+
+---
+
 ## Pool Configuration
 
 ### Recommended Pools
@@ -264,6 +287,16 @@ Shows BTC price, block height, network hashrate, fees, and your contribution.
 
 Large time display with mining summary at bottom.
 
+### Status Indicators
+
+The display features color-coded indicators for quick health monitoring:
+
+| Indicator | Green | Yellow | Red |
+|-----------|-------|--------|-----|
+| **Temperature** | <50°C | 50-70°C | >70°C |
+| **WiFi Signal** | >-60dBm | -60 to -75dBm | <-75dBm |
+| **Pool Latency** | <100ms | 100-300ms | >300ms |
+
 ---
 
 ## Performance
@@ -285,11 +318,12 @@ SparkMiner uses both ESP32 cores efficiently:
 - **Core 1 (High Priority, 19):** Pipelined hardware SHA-256 mining using direct register access and assembly optimization
 - **Core 0 (Low Priority, 1):** WiFi, Stratum protocol, display updates, and software SHA-256 backup mining
 
-**v2.7.0 Optimizations:**
-- Pipelined assembly v2 with unrolled zero loops (~20 cycles saved per hash)
-- Increased yield intervals (4x fewer context switches)
-- Memory leak fixes (StaticJsonDocument, fixed char arrays)
-- Stable heap usage for long-term operation
+**v2.8.0 Features & Architecture:**
+- **Persistent Stats:** Lifetime mining history preserved via NVS and SD card backups.
+- **Enhanced Stability:** Struct alignment fixes and robust error handling.
+- **Optimized Core Usage:**
+  - Core 1: Pipelined assembly SHA-256 (v2) with unrolled loops.
+  - Core 0: Network stack, Stratum, and UI management.
 
 ---
 
@@ -404,12 +438,12 @@ If you need to flash manually without PlatformIO:
 # ESP32 (CYD boards) - factory bin at 0x0
 esptool.py --chip esp32 --port COM3 --baud 921600 \
     write_flash -z --flash-mode dio --flash-freq 40m \
-    0x0 esp32-2432s028-2usb_factory.bin
+    0x0 cyd-2usb_factory.bin
 
 # ESP32-S3 (Freenove) - factory bin at 0x0
 esptool.py --chip esp32s3 --port COM5 --baud 921600 \
     write_flash -z --flash-mode dio --flash-freq 80m \
-    0x0 esp32-s3-2432s028_factory.bin
+    0x0 freenove-s3_factory.bin
 ```
 
 ### Project Structure

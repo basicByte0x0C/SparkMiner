@@ -2,6 +2,29 @@
 
 All notable changes to SparkMiner will be documented in this file.
 
+## [v2.8.0] - 2025-01-07
+
+### Added
+- Persistent mining statistics (NVS storage)
+- SD card stats backup (/stats.json)
+- Color-coded status indicators (temp, WiFi, ping)
+- Unified devtool.py for build/flash/monitor
+- Friendly firmware naming (cyd-1usb, cyd-2usb, etc.)
+- Cloudflare Worker for HTTPS stats API (optional)
+
+### Changed
+- Firmware filenames now use friendly board names
+- Display shows lifetime totals instead of session-only stats
+- devtool.py replaces flash.py and build_release.py
+
+### Fixed
+- Struct alignment padding causing stats checksum failures
+- WiFi portal not opening when SD has stats but no config
+- COM port handling after device reset
+
+### Removed
+- flash.py, flash.bat (use devtool.py instead)
+
 ## [v2.7.0] - 2025-01-06
 
 ### Fixed
