@@ -102,15 +102,45 @@ To upgrade from an older version:
 
 ### Supported Boards
 
-| Board | Environment | Chip | Display | Price | Notes |
-|-------|-------------|------|---------|-------|-------|
-| **ESP32-2432S028R** | `esp32-2432s028` | ESP32-WROOM-32 | 2.8" ILI9341 | $4-16 | Standard CYD (1-USB), most common |
-| **ESP32-2432S028R 2-USB** | `esp32-2432s028-2usb` | ESP32-WROOM-32 | 2.8" ILI9341 | $4-16 | CYD with dual USB (Type-C + Micro) |
-| **ESP32-2432S028R ST7789** | `esp32-2432s028-st7789` | ESP32-WROOM-32E | 2.8" ST7789 | $4-16 | Alternative display driver variant |
-| **Freenove FNK0104** | `esp32-s3-2432s028` | ESP32-S3 | 2.8" IPS | $18-23 | S3 with 8MB Flash, 8MB PSRAM, SD_MMC |
-| **ESP32-S3 DevKitC-1** | `esp32-s3-devkit` | ESP32-S3 | None | $12-18 | Headless with PSRAM, USB-OTG |
-| **ESP32 Headless** | `esp32-headless` | ESP32-WROOM-32 | None | $5-10 | Any generic ESP32 dev board |
-| **Lolin S3 Mini** | `esp32-s3-mini` | ESP32-S3FH4R2 | None | $5-20 | Compact form factor, RGB LED |
+| Board | Environment | Chip | Display | Hashrate | Notes |
+|-------|-------------|------|---------|----------|-------|
+| **ESP32-2432S028R** | `esp32-2432s028` | ESP32-WROOM-32 | 2.8" ILI9341 | ~715 KH/s | Standard CYD (1-USB), most common |
+| **ESP32-2432S028R 2-USB** | `esp32-2432s028-2usb` | ESP32-WROOM-32 | 2.8" ILI9341 | ~715 KH/s | CYD with dual USB (Type-C + Micro) |
+| **ESP32-2432S028R ST7789** | `esp32-2432s028-st7789` | ESP32-WROOM-32E | 2.8" ST7789 | ~715 KH/s | Alternative display driver variant |
+| **Freenove FNK0104** | `esp32-s3-2432s028` | ESP32-S3 | 2.8" IPS | ~280-400 KH/s | S3 with 8MB Flash, 8MB PSRAM, SD_MMC |
+| **ESP32-S3 DevKitC-1** | `esp32-s3-devkit` | ESP32-S3 | None | ~280-400 KH/s | Headless with PSRAM, USB-OTG |
+| **ESP32 Headless** | `esp32-headless` | ESP32-WROOM-32 | None | ~715 KH/s | Any generic ESP32 dev board |
+| **Lolin S3 Mini** | `esp32-s3-mini` | ESP32-S3FH4R2 | None | ~280-400 KH/s | Compact form factor, RGB LED |
+
+### Board Support Status
+
+SparkMiner is optimized for CYD (Cheap Yellow Display) boards. Here's the compatibility status for popular ESP32 boards:
+
+| Board | Status | Notes |
+|-------|--------|-------|
+| **ESP32-2432S028R 2.8" (CYD)** | ✅ Full | Primary target, 3 variants supported |
+| **ESP32-WROOM-32 / DevKit** | ✅ Full | Use `esp32-headless` (no display) |
+| **ESP32-S3 DevKit** | ✅ Full | Use `esp32-s3-devkit` (headless) |
+| **Wemos Lolin S3 Mini** | ✅ Full | Use `esp32-s3-mini` (RGB LED) |
+| **Weact S3 Mini** | ⚠️ Partial | May work with `esp32-s3-mini` |
+| **Weact ESP32-D0WD-V3** | ⚠️ Partial | May work with `esp32-headless` |
+| **Wemos Lolin S2 Mini** | ❌ None | ESP32-S2 not supported |
+| **LILYGO T-Display S3** | ❌ None | Different display driver |
+| **LILYGO T-Display 1.14** | ❌ None | ST7789 135x240 not configured |
+| **LILYGO T-Display S3 AMOLED** | ❌ None | AMOLED not supported |
+| **LILYGO T-QT Pro** | ❌ None | GC9107 display not supported |
+| **LILYGO T-Dongle S3** | ❌ None | ST7735 display not supported |
+| **LILYGO T-HMI** | ❌ None | ST7789 480x320 not configured |
+| **ESP32-CAM** | ❌ None | No camera/display support |
+| **M5-StampS3** | ❌ None | Not configured |
+| **M5Stick-C / C-Plus** | ❌ None | Not configured |
+| **ESP32-C3 (all variants)** | ❌ None | Single-core RISC-V, no ASM support |
+| **ESP32-S3/C3 0.42" OLED** | ❌ None | OLED not supported |
+| **Waveshare ESP32-S3-GEEK** | ❌ None | LCD not configured |
+
+**Legend:** ✅ Full support | ⚠️ May work (untested) | ❌ Not supported
+
+> **Note:** SparkMiner focuses on maximum hashrate for CYD boards (~715 KH/s) using pipelined assembly SHA-256. For broader board support with lower hashrates, consider [NerdMiner](https://github.com/BitMaker-hub/NerdMiner_v2).
 
 ### Where to Buy
 

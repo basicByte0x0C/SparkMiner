@@ -233,7 +233,8 @@ void wifi_manager_init() {
     strcat(s_rotationHtml, "</select>");
     s_paramRotation = new WiFiManagerParameter("rotation", "Screen Rotation", "0", 2, s_rotationHtml);
 
-    // Custom HTML for Color Theme (Dark = default, Light = inverted off)
+    // Custom HTML for Color Theme
+    // CYD panel is inverted by default, so invertDisplay(true) = dark theme
     strcpy(s_invertHtml, "<br><select name='invert'>");
     strcat(s_invertHtml, "<option value='1'");
     if(config->invertColors) strcat(s_invertHtml, " selected");
@@ -272,10 +273,16 @@ void wifi_manager_init() {
         "body{background-color:#000000;color:#ffffff;font-family:Helvetica,Arial,sans-serif;}"
         "h1{color:#ff6800;}"
         "h3{color:#ffd700;}"
+        // WiFi network links - visible on dark background
+        "a{color:#ff6800;text-decoration:none;display:block;padding:10px;margin:5px 0;background:#181818;border-radius:4px;border:1px solid #525252;}"
+        "a:hover{background:#2a2a2a;color:#ff8c00;}"
+        "a:visited{color:#ff6800;}"
         "input,select{display:block;width:100%;box-sizing:border-box;margin:5px 0;padding:8px;border-radius:4px;background:#181818;color:#ffffff;border:1px solid #525252;}"
         "button{background:#ff6800;color:#000000;border:none;font-weight:bold;cursor:pointer;margin-top:15px;padding:10px;width:100%;border-radius:4px;}"
         "button:hover{background:#ff8c00;}"
         "div{padding:5px 0;}"
+        // Hide redundant text inputs for dropdown fields (dropdowns handle these)
+        "input[name='bright'],input[name='diff'],input[name='rotation'],input[name='invert'],input[name='https_stats']{display:none;}"
         "</style>";
     s_wm.setCustomHeadElement(customCSS);
 

@@ -377,8 +377,8 @@ static void drawMiningScreen(const display_data_t *data) {
     s_tft.print(formatHashrate(data->hashRate));
 
     // Shares on right side of hashrate panel
-    // Portrait: shift further right to avoid hashrate overlap
-    int sharesX = isPortrait ? (w - 55) : (w - 100);
+    // Portrait: shift toward center to fit 5+ digit share counts (e.g., "12345/12345")
+    int sharesX = isPortrait ? (w - 75) : (w - 100);
     s_tft.setTextSize(1);
     s_tft.setTextColor(COLOR_DIM);
     s_tft.setCursor(sharesX, y + 4);

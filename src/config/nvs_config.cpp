@@ -503,10 +503,10 @@ void nvs_config_reset(miner_config_t *config) {
     config->screenTimeout = 0;  // Never timeout
     config->rotation = 0;       // Portrait USB Top (default)
     config->displayEnabled = true;
-    config->invertColors = true;   // Dark theme (default)
+    config->invertColors = true;   // Dark theme (default) - CYD panel is inverted, so invertDisplay(true) = dark
 
     // Miner defaults
-    safeStrCpy(config->workerName, "hybrid", sizeof(config->workerName));
+    safeStrCpy(config->workerName, "SparkMiner", sizeof(config->workerName));
     config->targetDifficulty = DESIRED_DIFFICULTY;
 
     // Stats API defaults - HTTPS disabled by default for stability
