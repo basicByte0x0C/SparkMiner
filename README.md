@@ -1,6 +1,6 @@
-# SparkMiner v2.8.0
+# SparkMiner v2.9.0
 
-**High-performance dual-core Bitcoin solo miner for ESP32 & ESP32-S3**
+**High-performance Bitcoin solo miner for ESP32, ESP32-S3 & ESP32-C3**
 
 <img src="images/1767589853452.jpg" alt="SparkMiner Display" width="575">
 
@@ -110,14 +110,17 @@ To upgrade from an older version:
 | **Freenove FNK0104** | `esp32-s3-2432s028` | ESP32-S3 | 2.8" IPS | ~280-400 KH/s | S3 with 8MB Flash, 8MB PSRAM, SD_MMC |
 | **LILYGO T-Display S3** | `lilygo-t-display-s3` | ESP32-S3 | 1.9" ST7789 | ~280-400 KH/s | 170x320, 8-bit parallel, 16MB Flash |
 | **LILYGO T-Display V1** | `lilygo-t-display-v1` | ESP32-WROOM-32 | 1.14" ST7789 | ~715 KH/s | 135x240, SPI, compact |
+| **ESP32-C3 OLED** | `esp32-c3-oled` | ESP32-C3 | 128x64 SSD1306 | ~200-300 KH/s | Single-core RISC-V with OLED |
+| **ESP32-S3 OLED** | `esp32-s3-oled` | ESP32-S3 | 128x64 SSD1306 | ~280-400 KH/s | Dual-core with OLED display |
 | **ESP32-S3 DevKitC-1** | `esp32-s3-devkit` | ESP32-S3 | None | ~280-400 KH/s | Headless with PSRAM, USB-OTG |
 | **ESP32 Headless** | `esp32-headless` | ESP32-WROOM-32 | None | ~715 KH/s | Any generic ESP32 dev board |
 | **ESP32 Headless + LED** | `esp32-headless-led` | ESP32-WROOM-32 | RGB LED | ~715 KH/s | Headless with NeoPixel status LED |
+| **ESP32-C3 SuperMini** | `esp32-c3-supermini` | ESP32-C3 | None | ~200-300 KH/s | Single-core RISC-V, ultra-compact |
 | **Lolin S3 Mini** | `esp32-s3-mini` | ESP32-S3FH4R2 | RGB LED | ~280-400 KH/s | Compact with WS2812B LED status |
 
 ### Board Support Status
 
-SparkMiner is optimized for CYD (Cheap Yellow Display) boards but now supports LILYGO T-Display boards too.
+SparkMiner is optimized for CYD (Cheap Yellow Display) boards but now supports LILYGO T-Display, ESP32-C3, and OLED boards too.
 
 | Board | Status | Notes |
 |-------|--------|-------|
@@ -127,6 +130,9 @@ SparkMiner is optimized for CYD (Cheap Yellow Display) boards but now supports L
 | **ESP32-WROOM-32 / DevKit** | ✅ Full | Use `esp32-headless` or `esp32-headless-led` |
 | **ESP32-S3 DevKit** | ✅ Full | Use `esp32-s3-devkit` (headless) |
 | **Wemos Lolin S3 Mini** | ✅ Full | Use `esp32-s3-mini` (RGB LED status) |
+| **ESP32-C3 SuperMini** | ✅ Full | Use `esp32-c3-supermini` (headless) |
+| **ESP32-C3 + OLED** | ✅ Full | Use `esp32-c3-oled` (128x64 SSD1306) |
+| **ESP32-S3 + OLED** | ✅ Full | Use `esp32-s3-oled` (128x64 SSD1306) |
 | **Weact S3 Mini** | ⚠️ Partial | May work with `esp32-s3-mini` |
 | **Weact ESP32-D0WD-V3** | ⚠️ Partial | May work with `esp32-headless` |
 | **LILYGO T-Dongle S3** | ⚠️ Partial | May work with `esp32-s3-mini` (LED only) |
@@ -137,8 +143,6 @@ SparkMiner is optimized for CYD (Cheap Yellow Display) boards but now supports L
 | **ESP32-CAM** | ❌ None | No camera/display support |
 | **M5-StampS3** | ❌ None | Not configured |
 | **M5Stick-C / C-Plus** | ❌ None | Not configured (library conflicts) |
-| **ESP32-C3 (all variants)** | ❌ None | Single-core RISC-V, no dual-core mining |
-| **ESP32-S3/C3 0.42" OLED** | ❌ None | OLED (U8g2) not yet supported |
 | **Waveshare ESP32-S3-GEEK** | ❌ None | LCD not configured |
 
 **Legend:** ✅ Full support | ⚠️ May work (untested) | ❌ Not supported
@@ -153,11 +157,11 @@ SparkMiner is optimized for CYD (Cheap Yellow Display) boards but now supports L
 
 ### Hardware Features
 
-- **CPU:** Dual-core Xtensa LX6 @ 240MHz (or LX7 for S3)
-- **Display:** 2.8" 320x240 TFT (ILI9341/ST7789)
-- **Storage:** MicroSD card slot
+- **CPU:** Dual-core Xtensa LX6 @ 240MHz (ESP32), LX7 (S3), or single-core RISC-V (C3)
+- **Display:** TFT (ILI9341/ST7789) or OLED (SSD1306)
+- **Storage:** MicroSD card slot (select boards)
 - **Connectivity:** WiFi 802.11 b/g/n
-- **RGB LED:** Status indicator
+- **RGB LED:** Status indicator (headless boards)
 - **Button:** Boot button for interaction
 
 ---
