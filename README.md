@@ -416,9 +416,11 @@ SparkMiner uses both ESP32 cores efficiently:
 - **Core 1 (High Priority, 19):** Pipelined hardware SHA-256 mining using direct register access and assembly optimization
 - **Core 0 (Low Priority, 1):** WiFi, Stratum protocol, display updates, and software SHA-256 backup mining
 
-**v2.8.0 Features & Architecture:**
+**v2.9.0 Features & Architecture:**
 - **Persistent Stats:** Lifetime mining history preserved via NVS and SD card backups.
 - **Enhanced Stability:** Struct alignment fixes and robust error handling.
+- **Display Support:** OLED (SSD1306) and LCD (ILI9341/ST7789) via abstraction layer.
+- **New Boards:** ESP32-C3, LILYGO T-Display, and Headless with LED status.
 - **Optimized Core Usage:**
   - Core 1: Pipelined assembly SHA-256 (v2) with unrolled loops.
   - Core 0: Network stack, Stratum, and UI management.

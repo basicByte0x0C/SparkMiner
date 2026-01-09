@@ -25,8 +25,8 @@
 
 // HTTP APIs (always used - no SSL overhead)
 #define API_BLOCK_HEIGHT    "http://mempool.space/api/blocks/tip/height"
-#define API_HASHRATE        "http://mempool.space/api/v1/mining/hashrate/3d"
-#define API_DIFFICULTY      "http://mempool.space/api/v1/difficulty-adjustment"
+#define API_HASHRATE        "https://mempool.space/api/v1/mining/hashrate/1d"
+#define API_DIFFICULTY      "https://mempool.space/api/v1/difficulty-adjustment"
 #define API_FEES            "http://mempool.space/api/v1/fees/recommended"
 
 // HTTPS APIs (only used if proxy configured OR enableHttpsStats=true)

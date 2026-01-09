@@ -31,6 +31,7 @@ static uint32_t s_lastPriceUpdate = 0;
 static uint32_t s_lastBlockUpdate = 0;
 static uint32_t s_lastFeesUpdate = 0;
 static uint32_t s_lastPoolUpdate = 0;
+static uint32_t s_lastNetworkUpdate = 0;
 
 // Proxy state
 static bool s_proxyHealthy = true;
@@ -625,6 +626,58 @@ static void updatePoolStats() {
     }
 }
 
+static void updateNetworkHashrate() {
+    // Only fetch if HTTPS is available (proxy or direct)
+    if (!s_proxyConfigured && !s_httpsEnabled) return;
+    if (s_proxyConfigured && !s_proxyHealthy) return;
+
+    s_jsonDoc.clear();
+    if (fetchJson(API_HASHRATE, s_jsonDoc)) {
+        xSemaphoreTake(s_statsMutex, portMAX_DELAY);
+        
+        // Parse hashrate (hashes/s)
+        double hashrate = s_jsonDoc["currentHashrate"];
+        s_stats.networkHashrateRaw = hashrate;
+        
+        // Format hashrate string
+        if (hashrate > 1e18) {
+            snprintf(s_stats.networkHashrate, sizeof(s_stats.networkHashrate), "%.2f EH/s", hashrate / 1e18);
+        } else if (hashrate > 1e15) {
+             snprintf(s_stats.networkHashrate, sizeof(s_stats.networkHashrate), "%.2f PH/s", hashrate / 1e15);
+        } else {
+             snprintf(s_stats.networkHashrate, sizeof(s_stats.networkHashrate), "%.2f TH/s", hashrate / 1e12);
+        }
+        
+        // Try to get difficulty if available in response (mempool.space often includes it)
+        if (s_jsonDoc.containsKey("currentDifficulty")) {
+            double diff = s_jsonDoc["currentDifficulty"];
+            s_stats.difficultyRaw = diff;
+            snprintf(s_stats.networkDifficulty, sizeof(s_stats.networkDifficulty), "%.2f T", diff / 1e12);
+        }
+
+        s_stats.networkValid = true;
+        xSemaphoreGive(s_statsMutex);
+        Serial.printf("[STATS] Network hashrate updated: %s\n", s_stats.networkHashrate);
+    }
+}
+
+static void updateNetworkDifficulty() {
+    // Only fetch if HTTPS is available (proxy or direct)
+    if (!s_proxyConfigured && !s_httpsEnabled) return;
+    if (s_proxyConfigured && !s_proxyHealthy) return;
+
+    s_jsonDoc.clear();
+    if (fetchJson(API_DIFFICULTY, s_jsonDoc)) {
+        xSemaphoreTake(s_statsMutex, portMAX_DELAY);
+        s_stats.difficultyProgress = s_jsonDoc["progressPercent"];
+        double change = s_jsonDoc["difficultyChange"]; // API returns float
+        s_stats.difficultyChange = (int32_t)change;
+        xSemaphoreGive(s_statsMutex);
+        Serial.printf("[STATS] Difficulty adj: %.1f%% progress, %.1f%% change\n", 
+                      s_stats.difficultyProgress, change);
+    }
+}
+
 // ============================================================
 // Public API
 // ============================================================
@@ -679,6 +732,7 @@ void live_stats_force_update() {
     s_lastBlockUpdate = 0;
     s_lastFeesUpdate = 0;
     s_lastPoolUpdate = 0;
+    s_lastNetworkUpdate = 0;
 }
 
 void live_stats_task(void *param) {
@@ -691,6 +745,7 @@ void live_stats_task(void *param) {
     s_lastFeesUpdate = bootTime - UPDATE_FEES_MS - 2000;
     s_lastPriceUpdate = bootTime - UPDATE_PRICE_MS - 3000;
     s_lastPoolUpdate = bootTime - UPDATE_POOL_MS - 4000;
+    s_lastNetworkUpdate = bootTime - UPDATE_NETWORK_MS - 5000;
 
     Serial.println("[STATS] Task started");
 
@@ -725,6 +780,14 @@ void live_stats_task(void *param) {
                 if (now - s_lastPoolUpdate > UPDATE_POOL_MS) {
                     updatePoolStats();
                     s_lastPoolUpdate = millis();
+                    vTaskDelay(500 / portTICK_PERIOD_MS);
+                }
+
+                if (now - s_lastNetworkUpdate > UPDATE_NETWORK_MS) {
+                    updateNetworkHashrate();
+                    vTaskDelay(500 / portTICK_PERIOD_MS);
+                    updateNetworkDifficulty();
+                    s_lastNetworkUpdate = millis();
                     vTaskDelay(500 / portTICK_PERIOD_MS);
                 }
             }
