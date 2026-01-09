@@ -14,6 +14,7 @@
 #include <esp_pm.h>
 #include <Preferences.h>
 #include <OneButton.h>
+#include <soc/soc_caps.h>  // For SOC_CPU_CORES_NUM
 
 #include <board_config.h>
 #include "mining/miner.h"
@@ -363,30 +364,45 @@ void setupTasks() {
 
     // Only create miner tasks if wallet is configured
     if (hasValidConfig) {
-        // Miner on Core 1 (high priority, dedicated core)
-        xTaskCreatePinnedToCore(
-            miner_task_core1,
-            "Miner1",
-            MINER_1_STACK,
-            NULL,
-            MINER_1_PRIORITY,
-            &miner1Task,
-            MINER_1_CORE
-        );
+        #if (SOC_CPU_CORES_NUM >= 2)
+            // Dual-core: Run miners on both cores
+            // Miner on Core 1 (high priority, dedicated core)
+            xTaskCreatePinnedToCore(
+                miner_task_core1,
+                "Miner1",
+                MINER_1_STACK,
+                NULL,
+                MINER_1_PRIORITY,
+                &miner1Task,
+                MINER_1_CORE
+            );
 
-        // Miner on Core 0 (lower priority, yields to WiFi/Stratum/Display)
-        // Uses taskYIELD() every 256 hashes to cooperate with other tasks
-        xTaskCreatePinnedToCore(
-            miner_task_core0,
-            "Miner0",
-            MINER_0_STACK,
-            NULL,
-            MINER_0_PRIORITY,
-            &miner0Task,
-            MINER_0_CORE
-        );
+            // Miner on Core 0 (lower priority, yields to WiFi/Stratum/Display)
+            xTaskCreatePinnedToCore(
+                miner_task_core0,
+                "Miner0",
+                MINER_0_STACK,
+                NULL,
+                MINER_0_PRIORITY,
+                &miner0Task,
+                MINER_0_CORE
+            );
 
-        Serial.println("[INIT] All tasks created (dual-core mining)");
+            Serial.println("[INIT] All tasks created (dual-core mining)");
+        #else
+            // Single-core (C3, S2): Run only one miner task, not pinned
+            // Must yield frequently to let WiFi/Stratum work
+            xTaskCreate(
+                miner_task_core0,
+                "Miner",
+                MINER_0_STACK,
+                NULL,
+                MINER_0_PRIORITY,
+                &miner0Task
+            );
+
+            Serial.println("[INIT] All tasks created (single-core mining)");
+        #endif
     } else {
         Serial.println("[INIT] Monitor task created (mining disabled - no wallet)");
         Serial.println("[INIT] Configure via captive portal or SD card config.json");

@@ -10,16 +10,20 @@
 
 #include <Arduino.h>
 #include <board_config.h>
+#include "display/display_interface.h"
 
-// Screen types
+// Screen types (also defined in display_interface.h)
+#ifndef SCREEN_MINING
 #define SCREEN_MINING       0
 #define SCREEN_STATS        1
 #define SCREEN_CLOCK        2
+#endif
 #define SCREEN_AP_CONFIG    3
 
-// Display data structures
+// Display data structure
 // NOTE: Using fixed char arrays instead of Arduino String to prevent heap fragmentation
-typedef struct {
+// The struct tag display_data_s is used by display_interface.h forward declaration
+struct display_data_s {
     // Mining stats
     uint64_t totalHashes;
     double hashRate;
@@ -54,8 +58,7 @@ typedef struct {
     char networkHashrate[24];
     char networkDifficulty[24];
     int halfHourFee;
-
-} display_data_t;
+};
 
 #if USE_DISPLAY
 
@@ -154,21 +157,24 @@ void display_show_reset_complete();
 
 #else
 
-// Stub functions for headless builds
-static inline void display_init(uint8_t rotation, uint8_t brightness) {}
-static inline void display_update(const display_data_t *data) {}
-static inline void display_set_brightness(uint8_t brightness) {}
-static inline void display_set_screen(uint8_t screen) {}
-static inline uint8_t display_get_screen() { return 0; }
-static inline void display_next_screen() {}
-static inline void display_redraw() {}
-static inline uint8_t display_flip_rotation() { return 0; }
-static inline bool display_touched() { return false; }
-static inline void display_handle_touch() {}
-static inline void display_show_ap_config(const char *ssid, const char *password, const char *ip) {}
-static inline void display_set_inverted(bool inverted) {}
-static inline void display_show_reset_countdown(int seconds) {}
-static inline void display_show_reset_complete() {}
+// Declarations for headless builds (implemented in display_manager.cpp)
+void display_init(uint8_t rotation, uint8_t brightness);
+void display_update(const display_data_t *data);
+void display_set_brightness(uint8_t brightness);
+void display_set_screen(uint8_t screen);
+uint8_t display_get_screen();
+void display_next_screen();
+void display_redraw();
+uint8_t display_flip_rotation();
+uint16_t display_get_width();
+uint16_t display_get_height();
+bool display_is_portrait();
+bool display_touched();
+void display_handle_touch();
+void display_show_ap_config(const char *ssid, const char *password, const char *ip);
+void display_set_inverted(bool inverted);
+void display_show_reset_countdown(int seconds);
+void display_show_reset_complete();
 
 #endif // USE_DISPLAY
 

@@ -276,6 +276,28 @@
     // SHA Implementation: Defined in platformio.ini (USE_HARDWARE_SHA=1)
 
 // ============================================================
+// ESP32-C3 SuperMini - Single-core RISC-V (headless)
+// Ultra-compact and cheap ESP32-C3 board
+// ============================================================
+#elif defined(ESP32_C3_SUPERMINI)
+    #define BOARD_NAME "ESP32-C3-SuperMini"
+
+    #define USE_DISPLAY 0
+
+    // No LED status by default (can be added)
+    #ifndef USE_LED_STATUS
+        #define USE_LED_STATUS 0
+    #endif
+
+    #ifndef BUTTON_PIN
+        #define BUTTON_PIN 9  // XIAO ESP32-C3 boot button
+    #endif
+    #define BUTTON_ACTIVE_LOW 1
+
+    // Single-core RISC-V - software SHA only
+    // SHA Implementation: Uses miner_sha256.cpp (BitsyMiner software SHA)
+
+// ============================================================
 // Default - Generic ESP32
 // ============================================================
 #else

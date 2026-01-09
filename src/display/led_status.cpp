@@ -5,13 +5,13 @@
  * GPL v3 License
  */
 
-#include <board_config.h>
-
-#ifdef USE_LED_STATUS
-
 #include <Arduino.h>
-#include <FastLED.h>
+#include <board_config.h>
 #include "led_status.h"
+
+#if USE_LED_STATUS
+
+#include <FastLED.h>
 
 // ============================================================
 // Configuration

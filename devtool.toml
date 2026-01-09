@@ -103,6 +103,15 @@ needs_boot_mode = true
 port_changes_on_reset = true
 group = "Headless (No Display)"
 
+[boards.esp32-c3-supermini]
+name = "ESP32-C3 SuperMini"
+env = "esp32-c3-supermini"
+chip = "esp32c3"
+description = "Single-core RISC-V, ultra-compact headless miner"
+needs_boot_mode = true
+port_changes_on_reset = true
+group = "Headless (No Display)"
+
 # ============================================================
 # Release Settings
 # ============================================================
