@@ -891,7 +891,10 @@ void display_set_rotation(uint8_t rotation) {
 }
 
 void display_set_inverted(bool inverted) {
-    s_tft.invertDisplay(inverted);
+    // TFT panel default is inverted, so we flip the logic
+    // inverted=true means user wants light mode (white bg)
+    // inverted=false means user wants dark mode (black bg)
+    s_tft.invertDisplay(!inverted);
     Serial.printf("[DISPLAY] Color inversion %s\n", inverted ? "enabled" : "disabled");
 }
 

@@ -190,6 +190,9 @@ static bool loadConfigFromFile(miner_config_t *config) {
     if (doc.containsKey("backup_wallet")) {
         safeStrCpy(config->backupWallet, doc["backup_wallet"], sizeof(config->backupWallet));
     }
+    if (doc.containsKey("backup_pool_password")) {
+        safeStrCpy(config->backupPoolPassword, doc["backup_pool_password"], sizeof(config->backupPoolPassword));
+    }
 
     // Display settings (optional)
     if (doc.containsKey("brightness")) {
@@ -203,6 +206,11 @@ static bool loadConfigFromFile(miner_config_t *config) {
     }
     if (doc.containsKey("timezone_offset")) {
         config->timezoneOffset = doc["timezone_offset"];
+    }
+
+    // Miner settings (optional)
+    if (doc.containsKey("target_difficulty")) {
+        config->targetDifficulty = doc["target_difficulty"];
     }
 
     // Stats API settings (optional)

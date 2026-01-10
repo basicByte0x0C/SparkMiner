@@ -227,12 +227,12 @@ void wifi_manager_init() {
     s_paramDifficulty = new WiFiManagerParameter("diff", "Target Difficulty", s_bufDifficulty, 10, s_difficultyHtml);
 
     // Custom HTML for Rotation
-    // TFT rotation: 0,2=Portrait, 1,3=Landscape
+    // TFT rotation: 0,1=Portrait, 2,3=Landscape
     // USB position based on CYD board physical layout
     const char* rotLabels[] = {
         "Portrait - USB Bottom",
-        "Landscape - USB Right",
         "Portrait - USB Top",
+        "Landscape - USB Right",
         "Landscape - USB Left"
     };
     
@@ -273,13 +273,13 @@ void wifi_manager_init() {
     s_paramTimezone = new WiFiManagerParameter("tz", "Timezone Offset", s_bufTimezone, 4, s_timezoneHtml);
 
     // Custom HTML for Color Theme
-    // CYD panel is inverted by default, so invertDisplay(true) = dark theme
+    // invert_colors=true means light mode (white bg), false means dark mode (black bg)
     strcpy(s_invertHtml, "<br><select name='invert'>");
-    strcat(s_invertHtml, "<option value='1'");
-    if(config->invertColors) strcat(s_invertHtml, " selected");
-    strcat(s_invertHtml, ">Dark (Default)</option>");
     strcat(s_invertHtml, "<option value='0'");
     if(!config->invertColors) strcat(s_invertHtml, " selected");
+    strcat(s_invertHtml, ">Dark (Default)</option>");
+    strcat(s_invertHtml, "<option value='1'");
+    if(config->invertColors) strcat(s_invertHtml, " selected");
     strcat(s_invertHtml, ">Light</option></select>");
     // Use config value as default for hidden input
     s_paramInvert = new WiFiManagerParameter("invert", "Color Theme", config->invertColors ? "1" : "0", 2, s_invertHtml);
