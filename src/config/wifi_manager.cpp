@@ -194,7 +194,10 @@ void wifi_manager_init() {
         strcat(s_brightnessHtml, opt);
     }
     strcat(s_brightnessHtml, "</select>");
-    s_paramBrightness = new WiFiManagerParameter("bright", "Brightness", "100", 4, s_brightnessHtml);
+    // Use config value as default for hidden input (not hardcoded)
+    static char s_bufBrightness[8];
+    snprintf(s_bufBrightness, sizeof(s_bufBrightness), "%d", config->brightness);
+    s_paramBrightness = new WiFiManagerParameter("bright", "Brightness", s_bufBrightness, 4, s_brightnessHtml);
     // Difficulty dropdown (common solo mining values)
     const double diffValues[] = {0.00001, 0.0001, 0.001, 0.0014, 0.01, 0.1, 1.0};
     const char* diffLabels[] = {"0.00001 (Easiest)", "0.0001", "0.001", "0.0014 (Default)", "0.01", "0.1", "1.0 (Hardest)"};
@@ -211,7 +214,10 @@ void wifi_manager_init() {
         strcat(s_difficultyHtml, opt);
     }
     strcat(s_difficultyHtml, "</select>");
-    s_paramDifficulty = new WiFiManagerParameter("diff", "Target Difficulty", "0.0014", 10, s_difficultyHtml);
+    // Use config value as default for hidden input
+    static char s_bufDifficulty[16];
+    snprintf(s_bufDifficulty, sizeof(s_bufDifficulty), "%.6f", config->targetDifficulty);
+    s_paramDifficulty = new WiFiManagerParameter("diff", "Target Difficulty", s_bufDifficulty, 10, s_difficultyHtml);
 
     // Custom HTML for Rotation
     // TFT rotation: 0,2=Portrait, 1,3=Landscape
@@ -235,7 +241,10 @@ void wifi_manager_init() {
         strcat(s_rotationHtml, "</option>");
     }
     strcat(s_rotationHtml, "</select>");
-    s_paramRotation = new WiFiManagerParameter("rotation", "Screen Rotation", "0", 2, s_rotationHtml);
+    // Use config value as default for hidden input
+    static char s_bufRotation[4];
+    snprintf(s_bufRotation, sizeof(s_bufRotation), "%d", config->rotation);
+    s_paramRotation = new WiFiManagerParameter("rotation", "Screen Rotation", s_bufRotation, 2, s_rotationHtml);
 
     // Timezone dropdown
     // Common timezones from UTC-12 to UTC+14
@@ -251,7 +260,10 @@ void wifi_manager_init() {
         strcat(s_timezoneHtml, opt);
     }
     strcat(s_timezoneHtml, "</select>");
-    s_paramTimezone = new WiFiManagerParameter("tz", "Timezone Offset", "0", 4, s_timezoneHtml);
+    // Use config value as default for hidden input
+    static char s_bufTimezone[8];
+    snprintf(s_bufTimezone, sizeof(s_bufTimezone), "%d", config->timezoneOffset);
+    s_paramTimezone = new WiFiManagerParameter("tz", "Timezone Offset", s_bufTimezone, 4, s_timezoneHtml);
 
     // Custom HTML for Color Theme
     // CYD panel is inverted by default, so invertDisplay(true) = dark theme
@@ -262,7 +274,8 @@ void wifi_manager_init() {
     strcat(s_invertHtml, "<option value='0'");
     if(!config->invertColors) strcat(s_invertHtml, " selected");
     strcat(s_invertHtml, ">Light</option></select>");
-    s_paramInvert = new WiFiManagerParameter("invert", "Color Theme", "1", 2, s_invertHtml);
+    // Use config value as default for hidden input
+    s_paramInvert = new WiFiManagerParameter("invert", "Color Theme", config->invertColors ? "1" : "0", 2, s_invertHtml);
 
     // Stats API Settings
     const char* statsHeader = "<br><h3>Stats API Settings</h3><div style='font-size:80%;color:#aaa'>Proxy offloads SSL from ESP32. Recommended for HTTPS.</div>";
@@ -277,7 +290,8 @@ void wifi_manager_init() {
     strcat(s_httpsStatsHtml, "<option value='1'");
     if(config->enableHttpsStats) strcat(s_httpsStatsHtml, " selected");
     strcat(s_httpsStatsHtml, ">Direct HTTPS: Enabled (Unstable)</option></select>");
-    s_paramHttpsStats = new WiFiManagerParameter("https_stats", "Direct HTTPS", "0", 2, s_httpsStatsHtml);
+    // Use config value as default for hidden input
+    s_paramHttpsStats = new WiFiManagerParameter("https_stats", "Direct HTTPS", config->enableHttpsStats ? "1" : "0", 2, s_httpsStatsHtml);
 
     // Configure WiFiManager
     s_wm.setDebugOutput(false);
@@ -305,7 +319,22 @@ void wifi_manager_init() {
         "input[name='bright'],input[name='diff'],input[name='rotation'],input[name='invert'],input[name='https_stats'],input[name='tz']{display:none;}"
         "</style>"
         "<script>"
-        "function c(l){document.getElementById('s').value=l.innerText||l.textContent;document.getElementById('p').focus();}"
+        // Sync dropdown values to hidden inputs on load and change
+        "function syncDropdowns(){"
+        "var dd=['bright','diff','rotation','tz','invert','https_stats'];"
+        "dd.forEach(function(n){"
+        "var sel=document.querySelector('select[name=\"'+n+'\"]');"
+        "var inp=document.querySelector('input[name=\"'+n+'\"]');"
+        "if(sel&&inp){"
+        "inp.value=sel.value;"  // Sync on load
+        "sel.addEventListener('change',function(){inp.value=sel.value;});"  // Sync on change
+        "}"
+        "});"
+        "}"
+        // Run sync after DOM is fully loaded
+        "if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',syncDropdowns);}else{syncDropdowns();}"
+        // SSID auto-fill when clicking network link
+        "function c(l){var s=document.querySelector('input[name=\"s\"]');if(s){s.value=l.innerText||l.textContent;}}"
         "</script>";
     s_wm.setCustomHeadElement(customCSS);
 
