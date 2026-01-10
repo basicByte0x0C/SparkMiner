@@ -698,6 +698,8 @@ static void drawClockScreen(const display_data_t *data) {
 // ============================================================
 
 void display_init(uint8_t rotation, uint8_t brightness) {
+    Serial.printf("[DISPLAY] Init with rotation=%d, brightness=%d\n", rotation, brightness);
+
     // Enable 5V power for T-Display S3 (required before display init)
     #ifdef PIN_ENABLE5V
         pinMode(PIN_ENABLE5V, OUTPUT);

@@ -227,12 +227,12 @@ void wifi_manager_init() {
     s_paramDifficulty = new WiFiManagerParameter("diff", "Target Difficulty", s_bufDifficulty, 10, s_difficultyHtml);
 
     // Custom HTML for Rotation
-    // TFT rotation: 0,1=Portrait, 2,3=Landscape
+    // TFT rotation: 0,2=Portrait, 1,3=Landscape (ILI9341 standard)
     // USB position based on CYD board physical layout
     const char* rotLabels[] = {
         "Portrait - USB Bottom",
-        "Portrait - USB Top",
         "Landscape - USB Right",
+        "Portrait - USB Top",
         "Landscape - USB Left"
     };
     

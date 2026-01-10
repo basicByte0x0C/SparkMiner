@@ -203,6 +203,7 @@ static bool loadConfigFromFile(miner_config_t *config) {
     }
     if (doc.containsKey("rotation")) {
         config->rotation = doc["rotation"];
+        Serial.printf("[CONFIG] Loaded rotation=%d from SD\n", config->rotation);
     }
     if (doc.containsKey("timezone_offset")) {
         config->timezoneOffset = doc["timezone_offset"];
