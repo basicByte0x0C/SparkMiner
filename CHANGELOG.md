@@ -2,14 +2,25 @@
 
 All notable changes to SparkMiner will be documented in this file.
 
-## [v2.9.0] - 2026-01-09
+## [v2.9.1] - 2026-01-09
+
+### Fixed
+- Display settings (brightness, rotation, invert) now apply immediately after WiFi portal save
+- WiFi portal dropdown values not syncing to form on selection
+- SSID auto-fill when clicking scanned network names
+- ArduinoJson memory optimization for network hashrate API
 
 ### Added
-- HTTPS Stats Proxy with SSL bumping support (274d63d)
+- Timezone support with configurable UTC offset (-12 to +14)
+- Network hashrate and difficulty stats from mempool.space
+- HTTPS stats proxy with SSL bumping support
+
+## [v2.9.0] - 2026-01-08
+
+### Added
 - U8g2 OLED display support for SSD1306 displays (9cbec10)
 - Display abstraction layer and ESP32-C3 single-core support (c24634e)
 - LED status driver and LILYGO T-Display support (50513d9)
-- Network Hashrate and Difficulty stats from mempool.space
 
 ### Changed
 - Updated README with ESP32-C3 and OLED board support (4081c9b)
