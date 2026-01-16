@@ -5,7 +5,6 @@
 #include <SPI.h>
 #include <HT_lCMEN2R13EFC1_LUT.h>
 #include "HT_st7735_fonts.h"
-// #include "picture_part.h"
 SPIClass fSPI(HSPI);
 
 
@@ -73,23 +72,49 @@ public:
 			updateData(0x13);
 	}
 
+	void setPartial()
+	{
+		sendCommand(0x00);
+		sendData(0xF7);
+		WRITE_LUT_RED();
+	}
+
+	void setFull()
+	{
+		sendCommand(0x00);
+		sendData(0xD7);
+	}
+
+	void refresh()
+	{
+		sendCommand(0x12); // Display Refresh
+		delay(10);
+		WaitUntilIdle();
+	}
+
 	void display()
 	{
-		sendCommand(0x12);
 		sendCommand(0x04); // Power ON
 		WaitUntilIdle();
 		delay(10);
 
-		sendCommand(0x12); // Display Refresh
-		delay(10);
-		WaitUntilIdle();
+		refresh();
 
 		sendCommand(0x02); // Power OFF
 		WaitUntilIdle();
-		// sendCommand(0x22);
-		// sendData(0xF7);
-		// sendCommand(0x20);
-		// WaitUntilIdle();
+	}
+
+	void setInverted()
+	{
+		WRITE_LUT_RED();
+		sendCommand(0x50);
+		sendData(0x07);
+	}
+
+	void setNormal()
+	{
+		sendCommand(0x50);
+		sendData(0x97);
 	}
 
 	void updateData(uint8_t addr)
@@ -485,14 +510,10 @@ private:
 	{
 		while (!digitalRead(_busy))
 		{ // LOW: idle, HIGH: busy
-		  // return;
-		//   Serial.println("busy");
-			// esp_sleep_enable_timer_wakeup(10 * 1000);
-			// esp_light_sleep_start();
-			delay(100);
+			delay(1);
 
 		}
-		delay(100);
+		delay(10);
 	}
 	inline void sendCommand(uint8_t com) __attribute__((always_inline))
 	{

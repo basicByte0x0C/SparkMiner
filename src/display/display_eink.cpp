@@ -148,14 +148,26 @@ static String formatDiffCompact(double diff) {
 // Screen Drawing Functions
 // ============================================================
 
+void printFullScreen() {
+    htDisplay.update(BLACK_BUFFER);
+    htDisplay.setFull();
+    htDisplay.display();
+}
+
+void printPartialScreen() {
+    htDisplay.update(BLACK_BUFFER);
+    htDisplay.setPartial();
+    htDisplay.display();
+}
+
 void clearScreen() {
     htDisplay.clear();
     htDisplay.update(BLACK_BUFFER);
 }
 
-void printScreen() {
-    htDisplay.update(BLACK_BUFFER);
-    htDisplay.display();
+void clearFullScreen() {
+    clearScreen();
+    printFullScreen();
 }
 
 static void drawMainScreen(const display_data_t *data) {
@@ -208,7 +220,7 @@ static void drawMainScreen(const display_data_t *data) {
     w = htDisplay.getStringWidth(best.c_str());
     htDisplay.drawString((EINK_WIDTH - w), (EINK_HEIGHT - s_fontHeight), best.c_str());
     
-    printScreen();
+    printPartialScreen();
 }
 
 static void drawStatsScreen(const display_data_t *data) {
@@ -242,7 +254,7 @@ static void drawStatsScreen(const display_data_t *data) {
     }
     htDisplay.drawString(0, ((s_fontHeight * 5) + 8), rssiLine.c_str());
 
-    printScreen();
+    printPartialScreen();
 }
 
 // ============================================================
@@ -270,17 +282,11 @@ void eink_display_init(uint8_t rotation, uint8_t brightness) {
     } else {
         htDisplay.screenRotate(ANGLE_0_DEGREE);
     }
-    eink_display_flip_rotation(); // TESTING PURPOSES
 
     // Default Font
     htDisplay.setFont(EINK_DEFAULT_FONT);
     s_fontHeight = EINK_DEFAULT_FONT[1];
-
-    Serial.println("[EINK] Driver initialized");
-    Serial.print("[EINK] Width: ");Serial.println(htDisplay.width());
-    Serial.print("[EINK] Height: ");Serial.println(htDisplay.height());
-    Serial.print("[EINK] Color: ");Serial.println(htDisplay.getColor());
-
+    
     // Show boot screen
     eink_display_show_boot();
 
@@ -313,23 +319,23 @@ void eink_display_next_screen() {
 }
 
 void eink_display_show_ap_config(const char *ssid, const char *password, const char *ip) {
-    clearScreen();
+    clearFullScreen();
 
     // Center WiFi AP stats
     htDisplay.drawString(10, 2, "WiFi Setup");
     htDisplay.drawHorizontalLine(0, (s_fontHeight + 4), EINK_WIDTH);
-    htDisplay.drawString(0, (6 + (2 * s_fontHeight)), "SSID:");
-    htDisplay.drawString(0, (6 + (3 * s_fontHeight)), ssid);
-    htDisplay.drawString(0, (6 + (4 * s_fontHeight)), "Pass:");
-    htDisplay.drawString(0, (6 + (5 * s_fontHeight)), password);
-    htDisplay.drawString(0, (6 + (6 * s_fontHeight)), "IP:");
-    htDisplay.drawString(0, (6 + (7 * s_fontHeight)), ip);
+    String ssid_text = "SSID: " + String(ssid);
+    htDisplay.drawString(0, (6 + (2 * s_fontHeight)), ssid_text.c_str());
+    String pass_text = "Pass: " + String(password);
+    htDisplay.drawString(0, (6 + (3 * s_fontHeight)), pass_text.c_str());
+    String ip_text = "IP: " + String(ip);
+    htDisplay.drawString(0, (6 + (4 * s_fontHeight)), ip_text.c_str());
 
-    printScreen();
+    printPartialScreen();
 }
 
 void eink_display_show_boot() {
-    clearScreen();
+    clearFullScreen();
 
     // Center "SparkMiner" title, version below
     const char *title = "SparkMiner";
@@ -347,11 +353,13 @@ void eink_display_show_boot() {
     w = htDisplay.getStringWidth(version);
     htDisplay.drawString(((EINK_WIDTH - w) / 2), (y + (2 * s_fontHeight)), version);
 
-    printScreen();
+    printPartialScreen();
 }
 
 void eink_display_show_reset_countdown(int seconds) {
     clearScreen();
+
+    // Does not work, due to other screens being drawn anyway and the fact that eink has long refresh rate
 
     // prepare data
     String countdown = String(seconds);
@@ -362,17 +370,19 @@ void eink_display_show_reset_countdown(int seconds) {
     w = htDisplay.getStringWidth(countdown.c_str());
     htDisplay.drawString(((EINK_WIDTH - w) / 2), ((EINK_HEIGHT - s_fontHeight) / 2), countdown.c_str());
 
-    printScreen();
+    printPartialScreen();
 }
 
 void eink_display_show_reset_complete() {
     clearScreen();
 
+    // Does not work, due to other screens being drawn anyway and the fact that eink has long refresh rate
+
     const char *text = "RESET COMPLETE";
     uint16_t w = htDisplay.getStringWidth(text);
     htDisplay.drawString(((EINK_WIDTH - w) / 2), ((EINK_HEIGHT - s_fontHeight) / 2), text);
     
-    printScreen();
+    printPartialScreen();
 }
 
 void eink_display_redraw() {
@@ -406,11 +416,11 @@ void eink_display_set_rotation(uint8_t rotation) {
 }
 
 void eink_display_set_inverted(bool inverted) {
-    
+
     if(true == inverted) {
-        htDisplay.invertDisplay();
+        htDisplay.setInverted();
     } else {
-        htDisplay.normalDisplay();
+        htDisplay.setNormal();
     }
 
     s_inverted = inverted;

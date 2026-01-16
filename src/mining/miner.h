@@ -19,7 +19,8 @@
 #include "../stratum/stratum_types.h"
 
 /* Hardcode Values for FW config at build time - usually dev and test purpose */
-/* Define HARDCODE_POOLS to do this */
+/* Define HARDCODE_POOLS to do this - still need valid configuration first */
+#if defined(HARDCODE_POOLS)
 #define HARDCODED_WALLET_PRIM   ""
 #define HARDCODED_WALLET_BKP    ""
 const char h_primWallet[] = HARDCODED_WALLET_PRIM;
@@ -39,6 +40,7 @@ const int h_bkpPort = HARDCODED_PORT_BKP;
 #define HARDCODED_WORKER_BKP    ""
 const char h_primWorker[] = HARDCODED_WORKER_PRIM;
 const char h_bkpWorker[] = HARDCODED_WORKER_BKP;
+#endif
 
 /**
  * Initialize mining subsystem
