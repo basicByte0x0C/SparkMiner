@@ -18,30 +18,6 @@
 #include "sha256_hw.h"
 #include "../stratum/stratum_types.h"
 
-/* Hardcode Values for FW config at build time - usually dev and test purpose */
-/* Define HARDCODE_POOLS to do this - still need valid configuration first */
-#if defined(HARDCODE_POOLS)
-#define HARDCODED_WALLET_PRIM   ""
-#define HARDCODED_WALLET_BKP    ""
-const char h_primWallet[] = HARDCODED_WALLET_PRIM;
-const char h_bkpWallet[] = HARDCODED_WALLET_BKP;
-
-#define HARDCODED_POOL_PRIM     "public-pool.io"
-#define HARDCODED_POOL_BKP      "public-pool.io"
-const char h_primPool[] = HARDCODED_POOL_PRIM;
-const char h_bkpPool[] = HARDCODED_POOL_BKP;
-
-#define HARDCODED_PORT_PRIM  21496 
-#define HARDCODED_PORT_BKP   21496
-const int h_primPort = HARDCODED_PORT_PRIM;
-const int h_bkpPort = HARDCODED_PORT_BKP;
-
-#define HARDCODED_WORKER_PRIM   ""
-#define HARDCODED_WORKER_BKP    ""
-const char h_primWorker[] = HARDCODED_WORKER_PRIM;
-const char h_bkpWorker[] = HARDCODED_WORKER_BKP;
-#endif
-
 /**
  * Initialize mining subsystem
  * - Disables watchdog timer

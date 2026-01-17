@@ -237,7 +237,7 @@ static void drawStatsScreen(const display_data_t *data) {
     htDisplay.drawString(0, ((s_fontHeight * 3) + 4), diffLine.c_str());
 
     // Templates
-    String templLine = "Tmplates: " + String(data->templates);
+    String templLine = "Templates: " + String(data->templates);
     htDisplay.drawString(0, ((s_fontHeight * 4) + 6), templLine.c_str());
 
     // WiFi signal
